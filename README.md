@@ -57,6 +57,11 @@ infrastructure/             -> technical details package
 
 ### Start local server
 
+You need a postgresql server that the application can connect to. See `quarkus.datasource.*` properties
+[src/main/resources/application.properties](src/test/resources/application.properties)
+to find out how the server, db, user must be setup.
+
+
 ```bash
  ./mvnw compile quarkus:dev
  ```
@@ -65,11 +70,17 @@ The server should be running at http://localhost:8080
 
 ### Running the application tests
 
+You need a postgresql server that the tests can connect to. See `quarkus.datasource.*` properties
+[src/test/resources/application.properties](src/test/resources/application.properties)
+to find out how the server, db, user must be setup.
+
 ``` 
 ./mvnw test 
 ```
 
 ### Running postman collection tests
+
+Run the server as above ("Start local server"), and the run:
 
 ```
 ./collections/run-api-tests.sh
