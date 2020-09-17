@@ -52,6 +52,10 @@
       <artifactId>quarkus-jdbc-postgresql</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-flyway</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
@@ -127,6 +131,11 @@
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
           </systemProperties>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-maven-plugin</artifactId>
+        <version>6.5.6</version>
       </plugin>
     </plugins>
   </build>
