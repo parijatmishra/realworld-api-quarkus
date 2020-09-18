@@ -1,26 +1,188 @@
 # ![RealWorld Example App](quarkus-logo.png)
+**This repository was forked from https://github.com/diegocamara/realworld-api-quarkus**
 
-> ### Quarkus Framework codebase containing real world examples (CRUD, auth, advanced patterns, etc) that adheres to the [RealWorld](https://github.com/gothinkster/realworld) spec and API.
+This application is an implementation of the [RealWorld](https://github.com/gothinkster/realworld) spec and API backend (it contains no front-end UI).
 
-This codebase was created to demonstrate a fully fledged fullstack application built with [Quarkus](https://quarkus.io/) including CRUD operations, authentication, routing, pagination, and more.
+It was written with:
 
-We've gone to great lengths to adhere to the Quarkus community styleguides & best practices.
-
-For more information on how to this works with other frontends/backends, head over to the [RealWorld](https://github.com/gothinkster/realworld) repo.
-
-[![Build Status](https://travis-ci.org/diegocamara/realworld-api-quarkus.svg?branch=master)](https://travis-ci.org/diegocamara/realworld-api-quarkus)
-
-# How it works
-
-This application basicaly uses Quarkus Framework with Java 8 with some other modules known to development community:
-
-* Hibernate 5
-* Jackson for JSON
-* H2 in memory database
-* JPA Criteria
+* Java 14 as the core language
+* Apache Maven for builds
+* [Quarkus](https://quarkus.io/) framework and its extensions, such as
+    * [Flyway](https://quarkus.io/guides/flyway) for database migrations
+    * [Hibernate](https://quarkus.io/guides/hibernate-orm) as the ORM
+    * [RESTEasy](https://resteasy.github.io/) for JAX-RS, [Vertx Web](https://vertx.io/docs/vertx-web/java/) as the HTTP server
+      with both provided via the Quarkus RESTEasy Jackson extension
 * Auth0 java-jwt
+* PostgreSQL
 
-### Project structure:
+# Building and running
+
+## Setting up PostgreSQL
+
+Most Java projects that work with relational databases use an embedded database like H2 or Derby for unit-tests.
+This way, unit-tests don't require an external resource to
+run and are therefore "hermetic". They may also be less resource intensive and run faster.
+However, the downside is that the code is being unit-tested against a different database that the one
+it will run against in production, increasing the probability of bugs.
+We eschew the use of an embedded database and use PostgreSQL throughout.
+
+You can install and run a PostgreSQL server in a Docker container like this:
+
+```
+$ docker image pull postgresql # only need to do this once
+$ docker run --name postgresql --env POSTGRES_PASSWORD=foobar --publish 5432:5432 -d postgres
+```
+
+The server starts with a root user named `postgres` with the password specified in `POSTGRES_PASSWORD`
+environment variable. An initial database named `postgres` is also created. To find the IP address of
+the server, run:
+
+```
+$ docker inspect postgres
+...
+        "IPAddress": "172.17.0.2",
+...
+```
+
+You can use the `psql` command line tool and connect to the server like this:
+
+```
+$ docker run --rm -it postgres psql -h 172.17.0.2 -U postgres
+Password for user postgres: ****** # same as the POSTGRES_PASSWORD above
+psql (12.3 (Debian 12.3-1.pgdg100+1))
+Type "help" for help.
+
+postgres=# 
+```
+
+You will need to create at least two databases within the postgresql server, one for unit-tests
+and another for running the application in `dev` profile. You will also need to create two different
+PostgreSQL roles, one for unit tests, and another for running the application in `dev` profile.
+
+**Database setup for running unit tests (`test` profile)**
+
+The database name, username and password for unit tests are specified in the file
+`src/test/resources/application.properties` as `%test.quarkus.datasource.*` properties.
+
+Connect to the server using psql and run the following commands, changing the database name, username
+or password if you changed the properties described above:
+
+```
+postgres=# CREATE DATABASE realworldapiservice_unit;
+postgres=# CREATE ROLE unit LOGIN PASSWORD 'unitpassword';
+postgres=# GRANT connect, create ON DATABASE realworldapiservice_unit TO unit;
+```
+
+**Database setup for running in development mode (`dev` profile)**
+
+The database name, username and password for the dev profile are specified in the file
+`src/main/resources/application.properties` as `%dev.quarkus.datasource.*` properties.
+
+Connect to the server using psql and run the following commands, changing the database name, username
+or password if you changed the properties described above:
+
+```
+postgres=# CREATE DATABASE realworldapiservice_dev;
+postgres=# CREATE ROLE dev LOGIN PASSWORD 'devpassword';
+postgres=# GRANT connect, create ON DATABASE realworldapiservice_dev TO dev;
+```
+
+**Database setup for running standalone jar or native executable (`prod` profile)**
+
+When the application is run from the runner jar or native executable, it runs in the `prod` profile.
+We deliberately do not provide default settings for this profile. Production database configuration should
+be explicit, to prevent the application from connecting to an incorrect db instance by accident.
+
+Create the production database as appropriate.
+
+## Running
+
+### Unit Tests (`test` profile)
+
+Ensure the test database is setup as described above, and run:
+
+```bash
+./mvnw test
+```
+
+### Development mode (`dev` profile)
+
+Ensure the dev database is setup as described above, and run
+
+
+```bash
+ ./mvnw compile quarkus:dev
+ ```
+
+The server should be running at http://localhost:8080
+
+### Integration Tests
+
+The application ships with a set of HTTP tests implemented as a [Postman](https://www.postman.com/) Collection.
+The tests are kept in the file
+[collections/Conduit.postman_collection.json](collections/Conduit.postman_collection.json).
+
+They are run using
+the [newman](https://learning.postman.com/docs/running-collections/using-newman-cli/command-line-integration-with-newman/)
+program.
+
+Run the server as above ("Running the application in `dev` profile"), and then run:
+
+```bash
+./collections/run-api-tests.sh
+```
+
+### Production Mode
+
+To run the application in production mode you need to build either a standalone jar or a native executable.
+
+#### Configuration for `prod` mode
+
+The production database configuration must be set before you can run the app. You can specify it
+using the following environment variables:
+
+```
+export QUARKUS_DATASOURCE_JDBC_URL=....
+export QUARKUS_DATASOURCE_USERNAME=...
+export QUARKUS_DATASOURCE_PASSWORD=...
+``` 
+
+An additional setting you may be interested in configuring is the HTTP port the application listens on:
+
+```
+export QUARKUS_HTTP_PORT=...
+```
+
+You may also be interested in configuring logging.
+See [Quarkus - Logging](https://quarkus.io/guides/logging).
+
+There are other ways of specifying these settings.
+See [Quarkus - Configuring Your Application](https://quarkus.io/guides/config).
+
+
+#### Building a "runner" standalone jar
+
+```bash
+./mvnw package
+# standalone jar is in target/realworld-api-quarkus-runner.jar
+# run it like so
+java -jar target/realworld-api-quarkus-runner.jar
+```
+
+#### Building a native executable
+
+GraalVM is necessary for building native executable, more information about
+setting up GraalVM can be found in [Quarkus guides](https://quarkus.io/guides/).
+
+```
+./mvnw package -Pnative
+# output is in target/realworld-api-quarkus-runner (no .jar extension)
+# run it like so
+./target/realworld-api-quarkus-runner
+```
+
+
+## Project structure:
 ```
 application/            -> business logic implementation
 +--data/                -> data aggregator classes
@@ -52,65 +214,3 @@ infrastructure/             -> technical details package
     |   +-- profile/        -> security profiles options
     +-- validation/         -> custom validations for request model
 ```
-
-# Getting started
-
-### Start local server
-
-You need a postgresql server that the application can connect to. See `quarkus.datasource.*` properties
-[src/main/resources/application.properties](src/test/resources/application.properties)
-to find out how the server, db, user must be setup.
-
-
-```bash
- ./mvnw compile quarkus:dev
- ```
-The server should be running at http://localhost:8080
-
-
-### Running the application tests
-
-You need a postgresql server that the tests can connect to. See `quarkus.datasource.*` properties
-[src/test/resources/application.properties](src/test/resources/application.properties)
-to find out how the server, db, user must be setup.
-
-``` 
-./mvnw test 
-```
-
-### Running postman collection tests
-
-Run the server as above ("Start local server"), and the run:
-
-```
-./collections/run-api-tests.sh
-```
-
-### Building jar file
-
-```
-./mvnw package
-```
-
-### Building native executable
-
-GraalVM is necessary for building native executable, more information about
-setting up GraalVM can be found in [Quarkus guides](https://quarkus.io/guides/)
-and database engine need to be changed.
-
-```
-./mvnw package -Pnative
-```
-
-#### Database changes can be made to the application.properties file.
-
-```properties
-# Database configuration
-quarkus.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-quarkus.datasource.driver=org.h2.Driver
-quarkus.datasource.username=sa
-quarkus.datasource.password=
-```
-
-## Help
-Improvements are welcome, feel free to contribute.
