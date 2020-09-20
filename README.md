@@ -59,39 +59,28 @@ You will need to create at least two databases within the postgresql server, one
 and another for running the application in `dev` profile. You will also need to create two different
 PostgreSQL roles, one for unit tests, and another for running the application in `dev` profile.
 
-**Database setup for running unit tests (`test` profile)**
+**Database setup for running unit tests (`test` profile)** The database name,
+username and password for unit tests are specified in the file
+`src/test/resources/application.properties` as `%test.quarkus.datasource.*`
+properties.
 
-The database name, username and password for unit tests are specified in the file
-`src/test/resources/application.properties` as `%test.quarkus.datasource.*` properties.
+**Database setup for running in development mode (`dev` profile)** The database
+name, username and password for the dev profile are specified in the file
+`src/main/resources/application.properties` as `%dev.quarkus.datasource.*`
+properties.
 
-Connect to the server using psql and run the following commands, changing the database name, username
-or password if you changed the properties described above:
-
-```
-postgres=# CREATE DATABASE realworldapiservice_unit;
-postgres=# CREATE ROLE unit LOGIN PASSWORD 'unitpassword';
-postgres=# GRANT connect, create ON DATABASE realworldapiservice_unit TO unit;
-```
-
-**Database setup for running in development mode (`dev` profile)**
-
-The database name, username and password for the dev profile are specified in the file
-`src/main/resources/application.properties` as `%dev.quarkus.datasource.*` properties.
-
-Connect to the server using psql and run the following commands, changing the database name, username
-or password if you changed the properties described above:
+We can create both of these by running the command:
 
 ```
-postgres=# CREATE DATABASE realworldapiservice_dev;
-postgres=# CREATE ROLE dev LOGIN PASSWORD 'devpassword';
-postgres=# GRANT connect, create ON DATABASE realworldapiservice_dev TO dev;
+docker run --rm -it --name psql -v $PWD:/work postgres:12-alpine psql -U postgres -h 172.17.0.2 -f /work/postgresql_setup.sql
 ```
 
-**Database setup for running standalone jar or native executable (`prod` profile)**
-
-When the application is run from the runner jar or native executable, it runs in the `prod` profile.
-We deliberately do not provide default settings for this profile. Production database configuration should
-be explicit, to prevent the application from connecting to an incorrect db instance by accident.
+**Database setup for running standalone jar or native executable (`prod`
+profile)** When the application is run from the runner jar or native
+executable, it runs in the `prod` profile.  We deliberately do not provide
+default settings for this profile. Production database configuration should be
+explicit, to prevent the application from connecting to an incorrect db
+instance by accident.
 
 Create the production database as appropriate.
 
